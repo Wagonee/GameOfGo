@@ -16,9 +16,9 @@ def main():
         gotypes.Player.white: agent.random_bot.RandomBot(),
     }
     while not game.is_over():
-        time.sleep(0.3)  # <1>
+        time.sleep(0.3)
 
-        clear_screen()   # <2>
+        clear_screen()
         print(scoring.compute_game_result(game), '\n')
         print_board(game.board)
         bot_move = bots[game.next_player].select_move(game)

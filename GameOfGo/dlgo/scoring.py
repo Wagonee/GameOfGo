@@ -1,4 +1,4 @@
-from dlgo.gotypes import Point, Player
+from GameOfGo.dlgo.gotypes import Point, Player
 from collections import namedtuple
 
 

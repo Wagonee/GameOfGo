@@ -1,9 +1,9 @@
 import random
 
-from dlgo.agent.base import Agent
-from dlgo.agent.helpers import is_point_an_eye
-from dlgo.goboard import Move
-from dlgo.gotypes import Point, Player
+from GameOfGo.dlgo.agent.base import Agent
+from GameOfGo.dlgo.agent.helpers import is_point_an_eye
+from GameOfGo.dlgo.goboard import Move
+from GameOfGo.dlgo.gotypes import Point, Player
 
 
 def evaluate_move(game_state, candidate):

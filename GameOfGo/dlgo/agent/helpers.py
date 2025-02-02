@@ -1,4 +1,4 @@
-from dlgo.gotypes import Point
+from GameOfGo.dlgo.gotypes import Point
 
 
 def is_point_an_eye(board, point, color):
