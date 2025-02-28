@@ -60,6 +60,9 @@ class Board:
         self._grid = {}
         self._hash = zobrist.EMPTY_BOARD
 
+
+    def is_full(self):
+        return len(self._grid) == self.num_rows * self.num_cols
     # def remove_stone(self, point):
     #     if point in self._grid:
     #         removed_string = self._grid.pop(point) # Удаляем камень.
