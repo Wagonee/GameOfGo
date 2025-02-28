@@ -1,19 +1,17 @@
-import dlgo.goboard as goboard
-import dlgo.gotypes as gotypes
+from dlgo.gotypes import Player, Point
+from dlgo.goboard import GameState, Move
+from dlgo.setup_mode import SetupState
 from dlgo.utils import print_board
 
-game = goboard.GameState.new_game(9)
+def main():
+    setup = SetupState(9, 9)
 
-game = game.apply_move(goboard.Move.play(gotypes.Point(3, 3)))
-print_board(game.board)
+    setup.place_stone(Player.black, Point(row=3, col=3))
+    setup.place_stone(Player.white, Point(row=3, col=4))
+    setup.place_stone(Player.black, Point(row=4, col=4))
+    # setup.remove_stone(Point(row=3, col=4))
 
-game = game.apply_move(goboard.Move.play(gotypes.Point(4, 4)))
-print_board(game.board)
-
-game = game.apply_move(goboard.Move.play(gotypes.Point(4, 3)))
-game.board.remove_stone(
-    gotypes.Point(3, 3)
-)
-
-game.complete_setup()
-
+    game_state = GameState.from_setup(setup, Player.black)
+    print_board(game_state.board)
+if __name__ == '__main__':
+    main()

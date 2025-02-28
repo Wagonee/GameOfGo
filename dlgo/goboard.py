@@ -4,7 +4,6 @@ from dlgo import zobrist
 from dlgo.gotypes import Player, Point
 from dlgo.scoring import compute_game_result
 
-
 __all__ = [
     'Board',
     'GameState',
@@ -61,14 +60,14 @@ class Board:
         self._grid = {}
         self._hash = zobrist.EMPTY_BOARD
 
-    def remove_stone(self, point):
-        if point in self._grid:
-            removed_string = self._grid.pop(point) # Удаляем камень.
-            color = self._grid[point].color  # Получаем цвет камня
-            del self._grid[point]  # Удаляем только этот камень
-            self._hash ^= zobrist.HASH_CODE[point, color]
-        else:
-            raise IllegalMoveError("Can't remove stone", point)
+    # def remove_stone(self, point):
+    #     if point in self._grid:
+    #         removed_string = self._grid.pop(point) # Удаляем камень.
+    #         color = self._grid[point].color  # Получаем цвет камня
+    #         del self._grid[point]  # Удаляем только этот камень
+    #         self._hash ^= zobrist.HASH_CODE[point, color]
+    #     else:
+    #         raise IllegalMoveError("Can't remove stone", point)
 
     def place_stone(self, player, point):
         assert self.is_on_grid(point)
@@ -184,6 +183,13 @@ class Move:
         return '(r %d, c %d)' % (self.point.row, self.point.col)
 
 
+def board_from_positions(num_rows, num_cols, positions):
+    board = Board(num_rows, num_cols)
+    for point, color in positions.items():
+        board.place_stone(color, point)
+    return board
+
+
 class GameState:
     def __init__(self, board, next_player, previous, move):
         self.board = board
@@ -196,19 +202,32 @@ class GameState:
                 previous.previous_states |
                 {(previous.next_player, previous.board.zobrist_hash())})
         self.last_move = move
-        self.setup_complete = False
+        # self.setup_complete = False
 
     def apply_move(self, move):
-        if not self.setup_complete:
-            if move.is_play:
-                next_board = copy.deepcopy(self.board)
-                next_board.place_stone(self.next_player, move.point)
-            else:
-                next_board = self.board
-            return GameState(next_board, self.next_player.other, self, move)
+        if move.is_play:
+            next_board = copy.deepcopy(self.board)
+            next_board.place_stone(self.next_player, move.point)
+        else:
+            next_board = self.board
+        return GameState(next_board, self.next_player.other, self, move)
 
-    def complete_setup(self):
-        self.setup_complete = True
+    # def complete_setup(self):
+    #     self.setup_complete = True
+
+
+
+
+    @classmethod
+    def from_setup(cls, setup_state, next_player):
+        positions = setup_state.get_positions()
+        board = board_from_positions(setup_state.num_rows,
+                                     setup_state.num_cols,
+                                     positions)
+        return GameState(board, next_player, None, None)
+
+
+
 
     @classmethod
     def new_game(cls, board_size):
@@ -276,3 +295,5 @@ class GameState:
             return self.next_player
         game_result = compute_game_result(self)
         return game_result.winner
+
+
