@@ -61,13 +61,18 @@ class Board:
         self._hash = zobrist.EMPTY_BOARD
 
     def is_full(self):
-        return self.count_empty == 0
+        return self.count_empty_points == 0
 
     @property
-    def count_empty(self):
-        total_points = self.num_rows * self.num_cols
-        occupied = len(self._grid)
-        return total_points - occupied
+    def count_empty_points(self):
+        empty_count = 0
+        for row in range(1, self.num_rows + 1):
+            for col in range(1, self.num_cols + 1):
+                point = Point(row, col)
+                val = self._grid.get(point, None)
+                if val is None:
+                    empty_count += 1
+        return empty_count
 
     # def remove_stone(self, point):
     #     if point in self._grid:
