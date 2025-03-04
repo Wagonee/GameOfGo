@@ -49,7 +49,7 @@ class GoString:
 
     def __deepcopy__(self, memodict=None):
         if memodict is None:
-            memodict = {}
+            self.memodict = {}
         return GoString(self.color, self.stones, copy.deepcopy(self.liberties))
 
 
@@ -60,9 +60,15 @@ class Board:
         self._grid = {}
         self._hash = zobrist.EMPTY_BOARD
 
-
     def is_full(self):
-        return len(self._grid) == self.num_rows * self.num_cols
+        return self.count_empty == 0
+
+    @property
+    def count_empty(self):
+        total_points = self.num_rows * self.num_cols
+        occupied = len(self._grid)
+        return total_points - occupied
+
     # def remove_stone(self, point):
     #     if point in self._grid:
     #         removed_string = self._grid.pop(point) # Удаляем камень.
@@ -129,7 +135,7 @@ class Board:
 
     def is_on_grid(self, point):
         return 1 <= point.row <= self.num_rows and \
-               1 <= point.col <= self.num_cols
+            1 <= point.col <= self.num_cols
 
     def get(self, point):
         string = self._grid.get(point)
@@ -148,7 +154,7 @@ class Board:
 
     def __deepcopy__(self, memodict=None):
         if memodict is None:
-            memodict = {}
+            self.memodict = {}
         copied = Board(self.num_rows, self.num_cols)
         copied._grid = copy.copy(self._grid)
         copied._hash = self._hash
@@ -194,7 +200,7 @@ def board_from_positions(num_rows, num_cols, positions):
 
 
 class GameState:
-    def __init__(self, board, next_player, previous, move):
+    def __init__(self, board, next_player, previous, move, move_history=None):
         self.board = board
         self.next_player = next_player
         self.previous_state = previous
@@ -206,6 +212,10 @@ class GameState:
                 {(previous.next_player, previous.board.zobrist_hash())})
         self.last_move = move
         # self.setup_complete = False
+        if move_history is None:
+            self.move_history = []
+        else:
+            self.move_history = move_history
 
     def apply_move(self, move):
         if move.is_play:
@@ -213,13 +223,13 @@ class GameState:
             next_board.place_stone(self.next_player, move.point)
         else:
             next_board = self.board
-        return GameState(next_board, self.next_player.other, self, move)
+        new_move_history = self.move_history.copy()
+        new_move_history.append((move, self.next_player))
+
+        return GameState(next_board, self.next_player.other, self, move, new_move_history)
 
     # def complete_setup(self):
     #     self.setup_complete = True
-
-
-
 
     @classmethod
     def from_setup(cls, setup_state, next_player):
@@ -227,17 +237,15 @@ class GameState:
         board = board_from_positions(setup_state.num_rows,
                                      setup_state.num_cols,
                                      positions)
-        return GameState(board, next_player, None, None)
-
-
-
+        return GameState(board, next_player, None, None, [])
 
     @classmethod
     def new_game(cls, board_size):
         if isinstance(board_size, int):
             board_size = (board_size, board_size)
         board = Board(*board_size)
-        return GameState(board, Player.black, None, None)
+
+        return GameState(board, Player.black, None, None, [])
 
     def is_move_self_capture(self, player, move):
         if not move.is_play:
@@ -260,25 +268,25 @@ class GameState:
         return next_situation in self.previous_states
 
     def is_valid_move(self, move):
-        if self.is_over():
+        if self.is_over:
             return False
         if move.is_pass or move.is_resign:
             return True
         return (
-            self.board.get(move.point) is None and
-            not self.is_move_self_capture(self.next_player, move) and
-            not self.does_move_violate_ko(self.next_player, move)
+                self.board.get(move.point) is None and
+                not self.is_move_self_capture(self.next_player, move) and
+                not self.does_move_violate_ko(self.next_player, move)
         )
 
+    @property
     def is_over(self):
-        if self.last_move is None:
-            return False
-        if self.last_move.is_resign:
+        if self.board.is_full():
             return True
-        second_last_move = self.previous_state.last_move if self.previous_state else None
-        if second_last_move is None:
-            return False
-        return self.last_move.is_pass and second_last_move.is_pass
+        if len(self.move_history) >= 2:
+            if self.move_history[-1][0].is_resign or (
+                    self.move_history[-1][0].is_pass and self.move_history[-2][0].is_pass):
+                return True
+        return False
 
     def legal_moves(self):
         moves = [
@@ -291,12 +299,14 @@ class GameState:
         moves.append(Move.resign())
         return moves
 
+    def print_history(self):
+        for move in self.move_history:
+            print(move[0], move[1])
+
     def winner(self):
-        if not self.is_over():
+        if not self.is_over:
             return None
         if self.last_move.is_resign:
             return self.next_player
         game_result = compute_game_result(self)
         return game_result.winner
-
-
