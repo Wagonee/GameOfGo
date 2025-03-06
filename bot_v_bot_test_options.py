@@ -12,8 +12,8 @@ white_player = FillBoardBot()
 
 print_board(game.board)
 
-while not game.is_over or game.board.count_empty_points == 1:
-    time.sleep(0.5)
+while not game.is_over and game.board.count_empty_points != 1:
+    time.sleep(0.1)
     if game.next_player == Player.black:
         move = black_player.select_move(game)
     else:
