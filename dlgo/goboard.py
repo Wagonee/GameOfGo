@@ -83,7 +83,7 @@ class Board:
     #     else:
     #         raise IllegalMoveError("Can't remove stone", point)
 
-    def place_stone(self, player, point):
+    def place_stone(self, player, point, capture_mode='all'):
         assert self.is_on_grid(point)
         if self._grid.get(point) is not None:
             print('Illegal play on %s' % str(point))
@@ -120,13 +120,24 @@ class Board:
             if replacement.num_liberties:
                 self._replace_string(replacement)
             else:
-                self._remove_string(other_color_string)
+                self._remove_string(other_color_string,
+                                    capture_mode=capture_mode)
 
     def _replace_string(self, new_string):
         for point in new_string.stones:
             self._grid[point] = new_string
 
-    def _remove_string(self, string):
+    def _remove_string(self, string, capture_mode='all'):
+        """
+        Удаляет группу камней с доски.
+
+        Args:
+            string: GoString, группа камней для удаления.
+            capture_mode: str, режим захвата камней:
+                'all':  удаляются все окруженные группы (оба цвета)
+                'opponent': удаляются только группы противника
+                'self':  удаляются только группы текущего игрока
+        """
         for point in string.stones:
             # Добавляем свободы всем соседним группам
             for neighbor in point.neighbors():
@@ -137,6 +148,33 @@ class Board:
                     self._replace_string(neighbor_string.with_liberty(point))
             self._grid[point] = None
             self._hash ^= zobrist.HASH_CODE[point, string.color]
+
+            # Обработка захвата в зависимости от режима
+            if capture_mode == 'all':
+                # Удаляем все окруженные группы
+                for neighbor in point.neighbors():
+                    neighbor_string = self._grid.get(neighbor)
+                    if neighbor_string is None:
+                        continue
+                    if neighbor_string.num_liberties == 0:
+                        self._remove_string(neighbor_string,
+                                            capture_mode='all')  # Рекурсивный вызов для обработки цепных захватов
+            elif capture_mode == 'opponent':
+                # Удаляем только группы противника
+                for neighbor in point.neighbors():
+                    neighbor_string = self._grid.get(neighbor)
+                    if neighbor_string is None:
+                        continue
+                    if neighbor_string.color != string.color and neighbor_string.num_liberties == 0:
+                        self._remove_string(neighbor_string, capture_mode='opponent')
+            elif capture_mode == 'self':
+                # Удаляем только группы текущего игрока
+                for neighbor in point.neighbors():
+                    neighbor_string = self._grid.get(neighbor)
+                    if neighbor_string is None:
+                        continue
+                    if neighbor_string.color == string.color and neighbor_string.num_liberties == 0:
+                        self._remove_string(neighbor_string, capture_mode='self')
 
     def is_on_grid(self, point):
         return 1 <= point.row <= self.num_rows and \
