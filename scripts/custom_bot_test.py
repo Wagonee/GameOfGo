@@ -110,7 +110,7 @@ def main():
         )
 
     # Сохраняем результат в файл
-    with open("scenario_results.txt", "w", encoding="utf-8") as result_file:
+    with open("../scenario_results.txt", "w", encoding="utf-8") as result_file:
         result_file.write(log.getvalue())
 
 
