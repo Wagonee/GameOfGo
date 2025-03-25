@@ -14,5 +14,4 @@ class SetupState:
         self._positions.pop(point, None)
 
     def get_positions(self):
-        # Возвращаем копию, чтобы не менять напрямую _positions
         return dict(self._positions)
