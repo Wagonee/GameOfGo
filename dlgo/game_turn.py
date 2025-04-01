@@ -15,17 +15,7 @@ class GameTurn:
         return f"{self.player} {self.move}"
 
 class DeterministicQueue:
-    """
-    Детерминированная очередь ходов с настраиваемым порядком.
-    """
     def __init__(self, pattern="BWBBWW"):
-        """
-        Инициализирует очередь с заданным шаблоном.
-        Args:
-            pattern (str): Строка, определяющая порядок ходов.
-                           'B' - черный, 'W' - белый.
-                           По умолчанию "BWBBWW".
-        """
         self.queue = []
         self.pattern = pattern
         self.pattern_index = 0

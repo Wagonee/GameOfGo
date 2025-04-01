@@ -10,12 +10,13 @@ class MoveQueue:
 
 
 def _char_to_player(char):
-    if char == "Ч":
+    if char in ("Ч", "B"):
         return Player.black
-    elif char == "Б":
+    elif char in ("Б", "W"):
         return Player.white
     else:
         raise ValueError("Invalid char")
+
 
 
 class DeterministicQueue(MoveQueue):
