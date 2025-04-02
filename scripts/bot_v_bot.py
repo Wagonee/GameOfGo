@@ -10,7 +10,7 @@ import time
 
 def main():
     board_size = 9
-    game = goboard.GameState.new_game(board_size)
+    game = goboard.GameState.new_game((2, 3))
     bots = {
         gotypes.Player.black: agent.random_bot.RandomBot(),
         gotypes.Player.white: agent.random_bot.RandomBot(),

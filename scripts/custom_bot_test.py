@@ -1,4 +1,3 @@
-import time
 from dlgo.gotypes import Player, Point
 from dlgo.goboard import GameState, Board
 from dlgo.agent.random_bot import RandomBot
@@ -20,7 +19,7 @@ def run_game(config_name, capture_mode, delayed_capture, pattern, initial_stones
     log.write(f"===== Сценарий: {config_name} =====\n")
     log.write(f"capture_mode = {capture_mode}, delayed_capture = {delayed_capture}, очередь: {pattern}\n\n")
 
-    board_size = 5
+    board_size = 4
     game = setup_custom_game(board_size, initial_stones)
 
     bots = {

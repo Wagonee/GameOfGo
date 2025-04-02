@@ -23,7 +23,7 @@ class StartGameRequest(BaseModel):
     board_size: int = 9
     initial_stones: Optional[List[Position]] = []
     queue_type: Optional[Literal['deterministic', 'random']] = 'deterministic'
-    queue_pattern: Optional[str] = "BWBBWW"
+    queue_pattern: Optional[str] = "BW"
     queue_depth: Optional[int] = 20
     capture_mode: Optional[Literal['both', 'white_only', 'black_only']] = 'both'
     delayed_capture: Optional[bool] = True

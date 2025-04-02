@@ -4,6 +4,7 @@ from api import app
 
 client = TestClient(app)
 
+
 def start_test_game():
     return client.post("/start", json={
         "board_size": 5,
@@ -12,16 +13,19 @@ def start_test_game():
         "next_player": "black"
     })
 
+
 def test_start_game():
     response = start_test_game()
     assert response.status_code == 200
     assert response.json()["status"] == "Game started"
+
 
 def test_state_after_start():
     start_test_game()
     r = client.get("/state")
     assert r.status_code == 200
     assert r.json()["next_player"] == "black"
+
 
 def test_valid_move_sequence():
     start_test_game()
@@ -35,6 +39,7 @@ def test_valid_move_sequence():
     r3 = client.get("/state")
     assert r3.json()["next_player"] == "black"
 
+
 def test_pass_and_resign():
     start_test_game()
 
@@ -46,6 +51,7 @@ def test_pass_and_resign():
 
     s = client.get("/state")
     assert s.json()["is_over"] is True
+
 
 def test_history_and_legal():
     start_test_game()
