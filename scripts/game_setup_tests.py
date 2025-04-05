@@ -1,7 +1,7 @@
-from dlgo.gotypes import Player, Point
-from dlgo.goboard import GameState, Move
-from dlgo.setup_mode import SetupState
-from dlgo.utils import print_board
+from core.gotypes import Player, Point
+from core.goboard import GameState, Move
+from core.setup_mode import SetupState
+from core.utils import print_board
 
 def main():
     setup = SetupState(9, 9)

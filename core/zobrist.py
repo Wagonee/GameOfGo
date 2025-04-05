@@ -1,4 +1,4 @@
-from dlgo.gotypes import Player, Point
+from core.gotypes import Player, Point
 
 __all__ = ['HASH_CODE', 'EMPTY_BOARD']
 

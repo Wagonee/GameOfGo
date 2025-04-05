@@ -1,9 +1,9 @@
-from dlgo.gotypes import Player, Point
-from dlgo.goboard import GameState, Board
-from dlgo.agent.random_bot import RandomBot
-from dlgo.utils import print_board, print_move
-from dlgo.capture_rules import cleanup_delayed_captures
-from dlgo.deterministic_queue import DeterministicQueue
+from core.gotypes import Player, Point
+from core.goboard import GameState, Board
+from core.agent.random_bot import RandomBot
+from core.utils import print_board, print_move
+from core.capture_rules import cleanup_delayed_captures
+from core.deterministic_queue import DeterministicQueue
 from io import StringIO
 import sys
 
@@ -30,7 +30,7 @@ def run_game(config_name, capture_mode, delayed_capture, pattern, initial_stones
     move_queue = DeterministicQueue(pattern)
 
     original_stdout = sys.stdout
-    sys.stdout = log  # перенаправляем печать в лог
+    sys.stdout = log
 
     print_board(game.board)
     print("Начинаем игру!\n")
@@ -54,7 +54,7 @@ def run_game(config_name, capture_mode, delayed_capture, pattern, initial_stones
     print_board(game.board)
     print("=" * 40 + "\n")
 
-    sys.stdout = original_stdout  # возвращаем stdout
+    sys.stdout = original_stdout
 
 
 def main():
@@ -108,7 +108,6 @@ def main():
             log=log
         )
 
-    # Сохраняем результат в файл
     with open("../scenario_results.txt", "w", encoding="utf-8") as result_file:
         result_file.write(log.getvalue())
 

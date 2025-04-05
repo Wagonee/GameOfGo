@@ -1,14 +1,14 @@
 import platform
 import subprocess
 import numpy as np
-import dlgo.gotypes
+import core.gotypes
 
 
 COLS = 'ABCDEFGHJKLMNOPQRST'
 STONE_TO_CHAR = {
     None: ' . ',
-    dlgo.gotypes.Player.black: ' ● ',
-    dlgo.gotypes.Player.white: ' ○ ',
+    core.gotypes.Player.black: ' ● ',
+    core.gotypes.Player.white: ' ○ ',
 }
 
 
@@ -30,7 +30,7 @@ def print_board(board):
     for row in range(board.num_rows, 0, -1):
         row_str = f'{row:2d} |'
         for col in range(1, board.num_cols + 1):
-            stone = board.get(dlgo.gotypes.Point(row=row, col=col))
+            stone = board.get(core.gotypes.Point(row=row, col=col))
             row_str += STONE_TO_CHAR[stone]
         row_str += '|'
         print(row_str)
@@ -40,7 +40,7 @@ def print_board(board):
 def point_from_coords(coords):
     col = COLS.index(coords[0].upper()) + 1
     row = int(coords[1:])
-    return dlgo.gotypes.Point(row=row, col=col)
+    return core.gotypes.Point(row=row, col=col)
 
 
 def coords_from_point(point):

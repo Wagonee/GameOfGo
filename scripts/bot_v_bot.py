@@ -1,9 +1,9 @@
-from dlgo import agent
-from dlgo.agent import random_bot
-from dlgo import goboard
-from dlgo import gotypes
-from dlgo import scoring
-from dlgo.utils import print_board, print_move, clear_screen
+from core import agent
+from core.agent import random_bot
+from core import goboard
+from core import gotypes
+from core import scoring
+from core.utils import print_board, print_move, clear_screen
 
 import time
 

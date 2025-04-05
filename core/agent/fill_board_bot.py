@@ -1,5 +1,5 @@
 import random
-from dlgo.goboard import Move
+from core.goboard import Move
 
 
 class FillBoardBot:

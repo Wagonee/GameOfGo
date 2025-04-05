@@ -1,5 +1,3 @@
-from dlgo.gotypes import Player, Point
-
 class SetupState:
     def __init__(self, num_rows, num_cols):
         self.num_rows = num_rows

@@ -1,7 +1,7 @@
-from dlgo.goboard import GameState
-from dlgo.gotypes import Player
-from dlgo.agent.fill_board_bot import FillBoardBot
-from dlgo.utils import print_board
+from core.goboard import GameState
+from core.gotypes import Player
+from core.agent.fill_board_bot import FillBoardBot
+from core.utils import print_board
 import time
 
 board_size = 5

@@ -1,4 +1,4 @@
-from dlgo.gotypes import Player
+from core.gotypes import Player
 
 
 def apply_capture_rules(board, player, adjacent_opposite_color, capture_mode):
