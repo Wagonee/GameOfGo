@@ -61,6 +61,7 @@ class GoString:
 
     def __repr__(self):
         stone_coords = sorted([(p.row, p.col) for p in self.stones])
+        # Используем frozenset для неизменяемого представления в логах, если нужно
         return f"<GoString {self.color.name} stones={stone_coords} liberties={self.num_liberties}>"
 
 
@@ -140,7 +141,6 @@ class Board:
                     simultaneous_capture_rule: Literal['opponent', 'both', 'self'] = 'opponent',
                     delayed_capture: bool = False
                     ) -> PotentialCaptures:
-
         assert self.is_on_grid(point), f"Point {point} is off the board ({self.num_rows}x{self.num_cols})"
         if self._grid.get(point) is not None:
             raise IllegalMoveError(f"Point {point} is already occupied by {self.get(point)}")
@@ -162,7 +162,7 @@ class Board:
             else:
                 if neighbor_string not in adjacent_other: adjacent_other.append(neighbor_string)
 
-        new_string = GoString(player, [point], liberties)
+        new_string = GoString(player, [point], frozenset(liberties))
         for same_color_string in adjacent_same:
             new_string = new_string.merged_with(same_color_string)
 
@@ -176,8 +176,15 @@ class Board:
         other_strings_updated: Dict[GoString, GoString] = {}
 
         for other_string in adjacent_other:
+            rep_point_other = next(iter(other_string.stones), None)
+            if not rep_point_other or self._grid.get(rep_point_other) != other_string:
+                logger.warning(
+                    f"Opponent string {repr(other_string)} changed/removed before liberty update calculation.")
+                continue
+
             replacement = other_string.without_liberty(point)
             other_strings_updated[other_string] = replacement
+
             if replacement.num_liberties == 0:
                 opponent_groups_losing_last_lib.add(other_string)
                 logger.debug(f"Opponent group {repr(other_string)} potentially captured (0 liberties after move).")
@@ -187,39 +194,45 @@ class Board:
 
         for original_string, updated_string in other_strings_updated.items():
             if original_string not in opponent_groups_losing_last_lib:
-                representative_point = next(iter(original_string.stones), None)
-                if representative_point:
-                    current_string_at_pos = self.get_go_string(representative_point)
-                    if current_string_at_pos == original_string:
-                        self._replace_string(updated_string)
-                    else:
-                        logger.warning(
-                            f"String {repr(original_string)} intended for liberty update was already changed/removed.")
+                rep_point_orig = next(iter(original_string.stones), None)
+                if rep_point_orig and self._grid.get(rep_point_orig) == original_string:
+                    self._replace_string(updated_string)
+                else:
+                    logger.warning(
+                        f"String {repr(original_string)} intended for liberty update was already changed/removed.")
 
         player_group_zero_libs = new_string.num_liberties == 0
         potential_self_capture_group: Optional[GoString] = new_string if player_group_zero_libs else None
         if player_group_zero_libs:
             logger.debug(f"Player group {repr(new_string)} potentially captured itself (0 liberties after placement).")
-
         groups_to_remove_immediately: Set[GoString] = set()
+        pending_opponent_for_return = frozenset(opponent_groups_losing_last_lib)
+        pending_self_for_return = potential_self_capture_group
+
         if not delayed_capture:
             is_simultaneous = bool(opponent_groups_losing_last_lib) and player_group_zero_libs
             if is_simultaneous:
                 logger.info(f"Immediate simultaneous capture scenario. Applying rule: '{simultaneous_capture_rule}'")
                 if simultaneous_capture_rule == 'opponent':
                     groups_to_remove_immediately.update(opponent_groups_losing_last_lib)
+                    pending_self_for_return = None
                 elif simultaneous_capture_rule == 'both':
                     groups_to_remove_immediately.update(opponent_groups_losing_last_lib)
                     if potential_self_capture_group: groups_to_remove_immediately.add(potential_self_capture_group)
                 elif simultaneous_capture_rule == 'self':
                     if potential_self_capture_group: groups_to_remove_immediately.add(potential_self_capture_group)
+                    pending_opponent_for_return = frozenset()
+
             elif opponent_groups_losing_last_lib:
                 logger.debug("Standard opponent capture scenario.")
                 groups_to_remove_immediately.update(opponent_groups_losing_last_lib)
+                pending_self_for_return = None
+
             elif player_group_zero_libs:
                 logger.warning(
                     f"Self-capture move detected for {player.name} at {point} (non-simultaneous). Removing player group.")
                 if potential_self_capture_group: groups_to_remove_immediately.add(potential_self_capture_group)
+                pending_opponent_for_return = frozenset()
 
             if groups_to_remove_immediately:
                 logger.info(
@@ -229,21 +242,21 @@ class Board:
                     if representative_point:
                         current_string_at_pos = self.get_go_string(representative_point)
                         if current_string_at_pos == group:
-                            current_liberties = {n for p in group.stones for n in p.neighbors() if
-                                                 self.is_on_grid(n) and self.get(n) is None}
-                            if not current_liberties:
-                                logger.info(f"Finalizing immediate removal of {repr(group)}")
-                                self._remove_string(group)
-                            else:
-                                logger.warning(
-                                    f"Group {repr(group)} decided for immediate removal, but now has {len(current_liberties)} liberties. Skipping removal.")
+                            logger.info(f"Finalizing immediate removal of {repr(group)}")
+                            self._remove_string(group)  # Perform removal
                         else:
                             logger.warning(
-                                f"Group {repr(group)} decided for immediate removal, but is no longer on board at its position.")
+                                f"Group {repr(group)} decided for immediate removal, but is no longer on board at its position or has changed ({repr(current_string_at_pos)}). Skipping removal.")
+                    else:
+                        logger.warning(
+                            f"Group {repr(group)} decided for immediate removal, but has no representative point? Should not happen.")
+            pending_opponent_for_return = frozenset()
+            pending_self_for_return = None
 
         return PotentialCaptures(
-            opponent_groups=frozenset(opponent_groups_losing_last_lib),
-            player_group=potential_self_capture_group
+            opponent_groups=pending_opponent_for_return if delayed_capture else frozenset(
+                opponent_groups_losing_last_lib),
+            player_group=pending_self_for_return if delayed_capture else potential_self_capture_group
         )
 
     def zobrist_hash(self):
@@ -252,9 +265,11 @@ class Board:
     def __deepcopy__(self, memodict=None):
         if memodict is None: memodict = {}
         if id(self) in memodict: return memodict[id(self)]
+
         new_board = Board(self.num_rows, self.num_cols)
         new_board._hash = self._hash
         new_board._grid = self._grid.copy()
+
         memodict[id(self)] = new_board
         return new_board
 
@@ -297,7 +312,8 @@ class Move:
         if self.is_resign: return 'resign'
         from .utils import COLS
         try:
-            return f'play {COLS[self.point.col - 1]}{self.point.row}'
+            col_str = COLS[self.point.col - 1]
+            return f'play {col_str}{self.point.row}'
         except IndexError:
             return f'play {self.point}'
 
@@ -348,7 +364,6 @@ class GameState:
                    simultaneous_capture_rule: Literal['opponent', 'both', 'self'] = 'opponent',
                    delayed_capture: bool = False
                    ) -> 'GameState':
-
         if move.is_play:
             next_board = copy.deepcopy(self.board)
             try:
@@ -373,6 +388,8 @@ class GameState:
         if delayed_capture:
             new_pending_opponent_this_move = potential_captures.opponent_groups
             new_pending_self_this_move = potential_captures.player_group
+            logger.debug(
+                f"Move {move} resulted in pending captures: Opponent={len(new_pending_opponent_this_move)}, Self={bool(new_pending_self_this_move)}")
 
         combined_pending_opponent = self.pending_opponent_captures.union(new_pending_opponent_this_move)
         combined_pending_self = new_pending_self_this_move if new_pending_self_this_move is not None else self.pending_self_capture
@@ -394,7 +411,7 @@ class GameState:
         board = Board(setup_state.num_rows, setup_state.num_cols)
         try:
             for point, color in setup_state.get_positions().items():
-                board.place_stone(color, point, simultaneous_capture_rule='opponent', delayed_capture=True)
+                board.place_stone(color, point, simultaneous_capture_rule='opponent', delayed_capture=False)
         except IllegalMoveError as e:
             logger.error(f"Error placing initial stone from setup: {e}")
             raise ValueError(f"Invalid initial setup: {e}") from e
@@ -407,14 +424,23 @@ class GameState:
         try:
             potential_captures = next_board.place_stone(player, move.point,
                                                         simultaneous_capture_rule='opponent',
-                                                        delayed_capture=True)
+                                                        delayed_capture=False)
             if potential_captures.player_group:
-                if not potential_captures.opponent_groups:
-                    logger.debug(f"Move {move} by {player.name} IS self-capture.")
-                    return True
+                player_string_after_move = next_board.get_go_string(move.point)
+                if player_string_after_move is None:
+                    sim_board_delayed = copy.deepcopy(self.board)
+                    pot_delayed = sim_board_delayed.place_stone(player, move.point,
+                                                                simultaneous_capture_rule='opponent',
+                                                                delayed_capture=True)
+
+                    if pot_delayed.player_group and not pot_delayed.opponent_groups:
+                        logger.debug(f"Move {move} by {player.name} IS self-capture.")
+                        return True
+                    else:
+                        logger.debug(
+                            f"Move {move} by {player.name} is NOT pure self-capture (opponent groups also captured or player group survived).")
+                        return False
                 else:
-                    logger.debug(
-                        f"Move {move} by {player.name} is NOT pure self-capture (opponent groups also captured).")
                     return False
             else:
                 return False
@@ -430,7 +456,9 @@ class GameState:
             board_after_move.place_stone(player, move.point,
                                          simultaneous_capture_rule='opponent',
                                          delayed_capture=False)
+
             next_situation_hash = board_after_move.zobrist_hash()
+
             logger.debug(
                 f"Checking Ko for move {move}: next hash {next_situation_hash}. Previous states hashes in current context: {self.previous_states}")
             return next_situation_hash in self.previous_states
@@ -442,6 +470,7 @@ class GameState:
         if self.is_over:
             logger.debug(f"Move {move} invalid: Game is over.")
             return False
+
         if move.is_pass or move.is_resign:
             return True
         if not move.is_play:
@@ -452,26 +481,31 @@ class GameState:
         if not self.board.is_on_grid(point):
             logger.debug(f"Move {move} invalid: Point {point} off grid.")
             return False
+
         if self.board.get(point) is not None:
             logger.debug(f"Move {move} invalid: Point {point} is occupied by {self.board.get(point)}.")
             return False
+
         if self.is_move_self_capture(player, move):
             logger.debug(f"Move {move} invalid: Self-capture.")
             return False
+
         if self.does_move_violate_ko(player, move):
             logger.debug(f"Move {move} invalid: Violates Ko.")
             return False
+
         return True
 
     @property
     def is_over(self) -> bool:
-        # Is the board full?
-        if self.board.is_full():
+        if self.board.count_empty_points == 0:
             logger.info("Game is over: board is full.")
             return True
+
         if self.last_move and self.last_move.is_resign:
             logger.info("Game is over: last move was resign.")
             return True
+
         if len(self.move_history) >= 2:
             last_move_info = self.move_history[-1]
             second_last_move_info = self.move_history[-2]
@@ -524,9 +558,11 @@ class GameState:
             return memodict[id(self)]
 
         new_board = copy.deepcopy(self.board, memodict)
+
         new_previous = None
         if self.previous_state is not None:
             new_previous = copy.deepcopy(self.previous_state, memodict)
+
         new_game_state = GameState(
             board=new_board,
             previous=new_previous,

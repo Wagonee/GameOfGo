@@ -51,7 +51,6 @@ class StartGameRequest(BaseModel):
     queue_pattern: Optional[str] = Field(default="BW",
                                          description="Паттерн для детерминированной очереди (e.g., 'BW', 'BBW')")
     queue_depth: Optional[int] = Field(default=20, description="Размер 'чанка' для случайной очереди")
-    # capture_mode removed
     simultaneous_capture_rule: Literal['opponent', 'both', 'self'] = Field(default='opponent',
                                                                            description="Правило разрешения при одновременном захвате: 'opponent' (классика), 'both', 'self'")
     delayed_capture: bool = Field(default=False,
@@ -140,7 +139,6 @@ async def start_new_game(req: StartGameRequest):
             setup.place_stone(player_color, Point(pos.row, pos.col))
 
         game_state = GameState.from_setup(setup)
-        # Exclude 'capture_mode' if it were still present in req
         game_config = req.model_dump(exclude={'initial_stones'})
 
         active_games[game_id] = {

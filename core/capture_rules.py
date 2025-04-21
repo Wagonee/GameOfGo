@@ -1,6 +1,5 @@
 from core.gotypes import Player
-
-
+# Old code...
 def apply_capture_rules(board, player, adjacent_opposite_color, capture_mode):
     for other_string in adjacent_opposite_color:
         replacement = other_string.without_liberty(next(iter(other_string.stones)))
