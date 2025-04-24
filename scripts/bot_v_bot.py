@@ -1,29 +1,46 @@
 from core import agent
 from core.agent import random_bot
-from core import goboard
-from core import gotypes
-from core import scoring
+from core.goboard import GameState, Move
+from core.gotypes import Player, Point
+from core.scoring import compute_game_result
 from core.utils import print_board, print_move, clear_screen
+from core.setup_mode import SetupState
 
 import time
 
 
 def main():
     board_size = 9
-    game = goboard.GameState.new_game((2, 3))
+    setup = SetupState(board_size, board_size)
+    game = GameState.from_setup(setup)
+
     bots = {
-        gotypes.Player.black: agent.random_bot.RandomBot(),
-        gotypes.Player.white: agent.random_bot.RandomBot(),
+        Player.black: agent.random_bot.RandomBot(),
+        Player.white: agent.random_bot.RandomBot(),
     }
+
+    current_player = Player.black
+
     while not game.is_over:
         time.sleep(0.3)
 
         clear_screen()
-        print(scoring.compute_game_result(game), '\n')
+        game_result = compute_game_result(game)
+        print(f"Score: {game_result}\n")
         print_board(game.board)
-        bot_move = bots[game.next_player].select_move(game)
-        print_move(game.next_player, bot_move)
-        game = game.apply_move(bot_move)
+
+        bot_move = bots[current_player].select_move(game, current_player)
+        print_move(current_player, bot_move)
+
+        game = game.apply_move(current_player, bot_move)
+        current_player = current_player.other
+
+    clear_screen()
+    final_result = compute_game_result(game)
+    print(f"Game Over!\nFinal Score: {final_result}")
+    print_board(game.board)
+    winner = game.winner()
+    print(f"Winner: {winner.name if winner else 'Draw/Undetermined'}")
 
 
 if __name__ == '__main__':

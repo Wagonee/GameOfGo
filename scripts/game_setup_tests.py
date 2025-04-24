@@ -11,7 +11,7 @@ def main():
     setup.place_stone(Player.black, Point(row=4, col=4))
     # setup.remove_stone(Point(row=3, col=4))
 
-    game_state = GameState.from_setup(setup, Player.black)
+    game_state = GameState.from_setup(setup)
     print_board(game_state.board)
 if __name__ == '__main__':
     main()
