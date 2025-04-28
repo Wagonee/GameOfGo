@@ -85,7 +85,6 @@ def test_start_game_initial_stones(client):
     assert response.status_code == 201
     game_id = response.json()["game_id"]
     state = active_games[game_id]["state"]
-    # Используем импортированный Point
     assert state.board.get(Point(3, 3)).name == "black"
     assert state.board.get(Point(4, 4)).name == "white"
     assert state.board.get(Point(1, 1)) is None

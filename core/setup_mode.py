@@ -2,10 +2,9 @@ class SetupState:
     def __init__(self, num_rows, num_cols):
         self.num_rows = num_rows
         self.num_cols = num_cols
-        self._positions = {}  # {Point: Player}
+        self._positions = {}
 
     def place_stone(self, color, point):
-        # Проверка на выход за границы и т.д.
         self._positions[point] = color
 
     def remove_stone(self, point):

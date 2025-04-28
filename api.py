@@ -192,7 +192,6 @@ async def get_game_state(game_id: str = Path(..., description="ID игры"),
             is_over=game_state.is_over,
             winner=winner_str,
             last_move=last_move_point,
-            # capture_mode removed
             simultaneous_capture_rule=game_config["simultaneous_capture_rule"],
             delayed_capture=game_config["delayed_capture"],
             current_turn_in_pattern=current_turn_index,
@@ -214,7 +213,7 @@ async def _process_player_action(
     turn_queue: MoveQueue = game_data["queue"]
     game_config = game_data["config"]
     delayed_capture_enabled = game_config["delayed_capture"]
-    simultaneous_rule = game_config["simultaneous_capture_rule"]  # Read needed config here
+    simultaneous_rule = game_config["simultaneous_capture_rule"]
 
     if current_game_state.is_over:
         logger.warning(f"Game {game_id}: Action '{move}' attempted but game is already over.")

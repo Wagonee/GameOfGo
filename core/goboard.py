@@ -61,7 +61,6 @@ class GoString:
 
     def __repr__(self):
         stone_coords = sorted([(p.row, p.col) for p in self.stones])
-        # Используем frozenset для неизменяемого представления в логах, если нужно
         return f"<GoString {self.color.name} stones={stone_coords} liberties={self.num_liberties}>"
 
 
@@ -509,7 +508,7 @@ class GameState:
         if len(self.move_history) >= 2:
             last_move_info = self.move_history[-1]
             second_last_move_info = self.move_history[-2]
-            if last_move_info[0].is_pass and second_last_move_info[0].is_pass:
+            if last_move_info[0].is_pass and second_last_move_info[0].is_pass and last_move_info[1] != second_last_move_info[1]:
                 logger.info("Game is over: two consecutive passes.")
                 return True
         return False
